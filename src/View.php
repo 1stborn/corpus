@@ -6,15 +6,6 @@ abstract class View {
 
 	private $data = [];
 
-	/**
-	 * @param $renderer
-	 * @return View
-	 */
-	final public static function instance($renderer) {
-		$class = __CLASS__ . '\\' . ucfirst($renderer);
-		return new $class;
-	}
-
 	abstract function render($args = [], $template = null);
 
 	abstract function find($template);
