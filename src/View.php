@@ -11,7 +11,7 @@ abstract class View {
 	 * @return View
 	 */
 	final public static function instance($renderer) {
-		$class = __CLASS__ . '\\' . $renderer;
+		$class = __CLASS__ . '\\' . ucfirst($renderer);
 		return new $class;
 	}
 
