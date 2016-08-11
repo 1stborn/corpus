@@ -135,8 +135,7 @@ class DB {
 	 */
 	protected function provider() {
 		if (!$this->driver) {
-			$driver = Config::get('db.{default}.driver');
-			$this->driver = new $driver;
+			$this->driver = new $this->config['driver']($this->config);
 		}
 
 		return $this->driver;
