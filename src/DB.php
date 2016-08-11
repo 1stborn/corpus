@@ -44,7 +44,7 @@ class DB {
 				return $value;
 			};
 
-		return $this->execute(preg_replace_callback('~(\?[0-9]+|\:[a-z_][a-z0-9_]*~', $injector, $sql));
+		return $this->execute(preg_replace_callback('~(\?[0-9]+|\:[a-z_][a-z0-9_]*)~i', $injector, $sql));
 	}
 
 	public function scalar($sql, array $params = []) {
