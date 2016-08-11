@@ -1,5 +1,5 @@
 <?php
-namespace DB;
+namespace Corpus\DB;
 
 use Corpus\Config;
 

@@ -2,7 +2,7 @@
 namespace Corpus\DB\Drivers;
 
 use Corpus\Config;
-use DB\Driver;
+use Corpus\DB\Driver;
 
 class MySQLi extends Driver {
 	/**
