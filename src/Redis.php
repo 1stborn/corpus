@@ -83,6 +83,25 @@ class Redis {
 		return $written == $length ? $this->response() : null;
 	}
 
+	public function hmset($name, array $values) {
+		$args = [$name];
+		foreach ($values as $key => $value) {
+			$args[] = $key;
+			$args[] = serialize($value);
+		}
+
+		return $this->__call('hmset', $args);
+	}
+
+	public function hmget($name) {
+		$args = [];
+		if ( $values = $this->__call('hmget', $name) )
+			for ( $i = 0, $l = sizeof($values); $i < $l; $i++ )
+				$args[$values[$i]] = unserialize($values[$i+1]) ?? null;
+
+		return $args;
+	}
+
 	private function write($stream, $bytes) {
 		if (!isset($bytes[0]) )
 			return 0;

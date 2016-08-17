@@ -10,6 +10,7 @@ use Slim\Http\Response;
 
 /**
  * @property View view
+ * @property \Corpus\Redis cache
  */
 class App extends AbstractHandler {
 	/**
@@ -17,13 +18,13 @@ class App extends AbstractHandler {
 	 */
 	protected $ci;
 
-	protected $session;
-
 	public $http_status = 200;
 
 	protected $method, $params;
 
 	private $args;
+
+	private $session = null;
 
 	public function __construct(ContainerInterface  $ci) {
 		$this->ci = $ci;
@@ -64,8 +65,47 @@ class App extends AbstractHandler {
 		return $this;
 	}
 
-	public function getSession() {
-		return $this->session;
+	public function flash($message = null) {
+		if ( !array_key_exists('__flash__', $this->session) )
+			$this->session['__flash__'] = [];
+
+		return $message
+			? array_push($this->session['__flash__'], $message)
+			: array_pop($this->session['__flash__']);
+	}
+
+	public function get($param, $default = null) {
+		if ( is_null($this->session) ) {
+			$this->session = $this->cache->hmget($this->getSID());
+		}
+
+		return
+			array_key_exists($param, $this->session)
+				? ( $this->session[$param] ?: $default )
+				: $default;
+	}
+
+	private function getSID($scope = '') {
+		if ( array_key_exists('sid', $_COOKIE) )
+			$sid = $_COOKIE['sid'];
+		else {
+			$sid = sha1(fread(fopen('/dev/urandom', 'r'), 100));
+			setcookie(Config::get('session.name'), $sid, Config::get('session.lifetime'));
+		}
+
+		return '__session.' . ( $scope ? $scope . '.' : '') . $sid;
+	}
+
+	public function set($param, $value = null) {
+		if ( is_array($param) )
+			foreach ( $param as $key => $value )
+				$this->set($key, $value);
+		else if (is_null($value) )
+			unset($this->session[$param]);
+		else
+			$this->session[$param] = $value;
+
+		return $this;
 	}
 
 	public function refresh() {
@@ -174,5 +214,14 @@ class App extends AbstractHandler {
 		$this->before();
 
 		return $this->after($this->route($this->method, $args));
+	}
+
+	public function __destruct() {
+		if ( $this->session ) {
+			$this->cache->del($this->getSID());
+			$this->cache->hmset($this->getSID(), $this->session);
+			if ( $lifetime = Config::get('session.lifetime', 0))
+				$this->cache->expire($this->getSID(), $lifetime);
+		}
 	}
 }
