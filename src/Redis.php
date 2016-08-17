@@ -43,6 +43,7 @@ class Redis {
 
 	public function __call($name, $args) {
 		static $crlf = "\r\n";
+		$args = (array) $args;
 
 		array_unshift($args, $name);
 
@@ -93,16 +94,26 @@ class Redis {
 		return $this->__call('hmset', $args);
 	}
 
-	public function hmget($name) {
+	private function mget($values) {
 		$args = [];
-		if ( $values = $this->__call('hmget', $name) )
-			for ( $i = 0, $l = sizeof($values); $i < $l; $i++ )
-				$args[$values[$i]] = unserialize($values[$i+1]) ?? null;
+		if ( $values )
+			for ($i = 0, $l = sizeof($values) - 1; $i < $l; $i++)
+				$args[$values[$i]] = unserialize($values[$i + 1]) ?? null;
 
 		return $args;
 	}
 
+	public function hmget($name, array $fields) {
+		return $this->mget($this->__call('hmget', $fields));
+	}
+
+	public function hgetall($name) {
+		return $this->mget($this->__call('hgetall', $name));
+	}
+
 	private function write($stream, $bytes) {
+		file_put_contents('/tmp/redis.log', $bytes, FILE_APPEND);
+
 		if (!isset($bytes[0]) )
 			return 0;
 		else if (($result = @fwrite($stream, $bytes)) !== 0)

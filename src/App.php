@@ -5,6 +5,7 @@ use Interop\Container\ContainerInterface;
 
 use Slim\Handlers\AbstractHandler;
 use Slim\Handlers\NotFound;
+use Slim\Http\Cookies;
 use Slim\Http\Request;
 use Slim\Http\Response;
 
@@ -26,8 +27,11 @@ class App extends AbstractHandler {
 
 	private $session = null;
 
+	private $cookies;
+
 	public function __construct(ContainerInterface  $ci) {
 		$this->ci = $ci;
+		$this->cookies = new Cookies;
 	}
 
 	public function param($name, $default = null) {
@@ -76,7 +80,7 @@ class App extends AbstractHandler {
 
 	public function get($param, $default = null) {
 		if ( is_null($this->session) ) {
-			$this->session = $this->cache->hmget($this->getSID());
+			$this->session = $this->cache->hgetall($this->getSID()) ?: [];
 		}
 
 		return
@@ -86,14 +90,20 @@ class App extends AbstractHandler {
 	}
 
 	private function getSID($scope = '') {
-		if ( array_key_exists('sid', $_COOKIE) )
-			$sid = $_COOKIE['sid'];
-		else {
-			$sid = sha1(fread(fopen('/dev/urandom', 'r'), 100));
-			setcookie(Config::get('session.name'), $sid, Config::get('session.lifetime'));
-		}
+		if ( !$sid = $this->getCookie('sid') )
+			$this->setCookie('sid', $sid = sha1(fread(fopen('/dev/urandom', 'r'), 100)), Config::get('session.lifetime'));
 
 		return '__session.' . ( $scope ? $scope . '.' : '') . $sid;
+	}
+
+	public function setCookie($name, $value, $expire = 0) {
+		$this->cookies->set($name, ['value' => $value, 'expires' => $expire]);
+	}
+
+	public function getCookie($name, $default = null) {
+		return $this->cookies->get(
+			$name,
+			$this->getRequest()->getCookieParam($name, $default));
 	}
 
 	public function set($param, $value = null) {
@@ -213,7 +223,12 @@ class App extends AbstractHandler {
 
 		$this->before();
 
-		return $this->after($this->route($this->method, $args));
+		$response = $this->after($this->route($this->method, $args));
+
+		foreach ($this->cookies->toHeaders() as $cookie )
+			$response = $response->withAddedHeader('Set-Cookie', $cookie);
+
+		return $response;
 	}
 
 	public function __destruct() {
