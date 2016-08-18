@@ -3,6 +3,7 @@ namespace Corpus;
 
 use Interop\Container\ContainerInterface;
 
+use Slim\Container;
 use Slim\Handlers\AbstractHandler;
 use Slim\Handlers\NotFound;
 use Slim\Http\Cookies;
@@ -29,6 +30,40 @@ class App extends AbstractHandler {
 
 	private $cookies;
 
+	protected $default = 'index';
+
+	public static function run($silent = false, $options = []) {
+		$options = Config::merge([
+			'settings' => Config::get('settings'),
+			'view' => function() {
+				$renderer = Config::get('view.renderer');
+				return new $renderer;
+			},
+			'db' => function() {
+				return new DB(Config::get('db.{default}'));
+			},
+			'cache' => function() {
+				return new Redis(Config::get("redis.{default}"));
+			}
+		], $options);
+
+		$app = new \Slim\App(new Container($options));
+
+		$app->add(function (Request $request, $response, \Slim\App $app) {
+			$path = $request->getUri()->getPath();
+
+			$controller = ucfirst(current(explode('/', trim($path, DS))) ?: Config::get('router.default'));
+			if ( !class_exists(Config::get('router.namespace') . $controller) )
+				$controller = Config::get('router.default');
+
+			$app->map(Config::get('router.methods'), $path, Config::get('router.namespace') . $controller);
+
+			return $app($request, $response);
+		});
+
+		return $app->run($silent);
+	}
+
 	public function __construct(ContainerInterface  $ci) {
 		$this->ci = $ci;
 		$this->cookies = new Cookies;
@@ -48,7 +83,19 @@ class App extends AbstractHandler {
 		return new $class($this->ci);
 	}
 
-	public function before() {}
+	public function before() {
+		$method = strtolower(trim($this->getRequest()->getUri()->getPath(), DS));
+		$controller = strtolower(substr(get_class($this), strlen(Config::get('router.namespace'))));
+
+		$this->method = trim(str_replace($controller, '', $method), '/') ?: strtolower(Config::get('router.default'));
+	}
+
+	public function actionIndex() {
+		if ( $view = $this->getView($this->method) ?: $this->getView($this->getRequest()->getUri()->getPath()) )
+			return call_user_func([$this, 'render'], $this->params, $view);
+		else
+			return call_user_func(new NotFound(), $this->getRequest(), $this->getResponse());
+	}
 
 	public function render(array $args = [], $template = null) {
 		return $this->view->render(
@@ -141,6 +188,10 @@ class App extends AbstractHandler {
 		return $this->ci->get('request');
 	}
 
+	public function getPath() {
+		return $this->getRequest()->getUri()->getPath();
+	}
+
 	public function isValid(...$required) {
 		foreach ( $required as $key )
 			if ( !$this->param($key) )
@@ -181,13 +232,17 @@ class App extends AbstractHandler {
 			return $this->getResponse()->withStatus(204);
 	}
 
-	public function route($method, array $args = []) {
+	public function route($method) {
 		if ( $route = $this->findRoute($method) )
-			return call_user_func_array($route, $args);
-		else if ( $view = $this->getView($method) ?: $this->getView($this->getRequest()->getUri()->getPath()) )
-			return call_user_func([$this, 'render'], $args, $view);
-		else
-			return call_user_func(new NotFound(), $this->getRequest(), $this->getResponse());
+			return call_user_func_array($route, $this->params);
+		else {
+			$http_method = strtolower($this->getRequest()->getMethod());
+
+			return call_user_func([
+				$this, (
+					method_exists($this, $http_method . $this->default) ? $http_method : 'action'
+				) . $this->default]);
+		}
 	}
 
 	protected function findRoute($method) {
@@ -218,12 +273,11 @@ class App extends AbstractHandler {
 	}
 
 	final public function __invoke(Request $request, Response $response, array $args = []) {
-		$this->method = trim($request->getUri()->getPath(), DS) ?: Config::get('router.default');
 		$this->params = $args;
 
 		$this->before();
 
-		$response = $this->after($this->route($this->method, $args));
+		$response = $this->after($this->route($this->method));
 
 		foreach ($this->cookies->toHeaders() as $cookie )
 			$response = $response->withAddedHeader('Set-Cookie', $cookie);
