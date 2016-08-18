@@ -24,6 +24,15 @@ class App extends AbstractHandler {
 
 	protected $method, $params;
 
+	/**
+	 * @var Response
+	 */
+	private $response;
+	/**
+	 * @var Request
+	 */
+	private $request;
+
 	private $args;
 
 	private $session = null;
@@ -49,8 +58,19 @@ class App extends AbstractHandler {
 
 		$app = new \Slim\App(new Container($options));
 
-		$app->add(function (Request $request, $response, \Slim\App $app) {
+		$app->add(function (Request $request, Response $response, \Slim\App $app) {
 			$path = $request->getUri()->getPath();
+
+			if ( preg_match('~^/([a-z]{2})($|/)~i', $path, $m) ) {
+				$path = substr($path, 3) ?: '/';
+
+				if ( in_array($m[1], Config::get('language.available')) )
+					$request = $request
+						->withUri($request->getUri()->withPath($path))
+						->withAttribute('language', $m[1]);
+				else
+					return $response->withRedirect($path);
+			}
 
 			$controller = ucfirst(current(explode('/', trim($path, DS))) ?: Config::get('router.default'));
 			if ( !class_exists(Config::get('router.namespace') . $controller) )
@@ -185,7 +205,7 @@ class App extends AbstractHandler {
 	 * @return Request
 	 */
 	public function getRequest() {
-		return $this->ci->get('request');
+		return $this->request;
 	}
 
 	public function getPath() {
@@ -203,7 +223,7 @@ class App extends AbstractHandler {
 	 * @return Response
 	 */
 	public function getResponse() {
-		return $this->ci->get('response');
+		return $this->response;
 	}
 
 	/**
@@ -273,11 +293,12 @@ class App extends AbstractHandler {
 	}
 
 	final public function __invoke(Request $request, Response $response, array $args = []) {
+		$this->request = $request;
+		$this->response = $response;
+
 		$this->params = $args;
 
-		$this->before();
-
-		$response = $this->after($this->route($this->method));
+		$response = $this->before() ?: $this->after($this->route($this->method));
 
 		foreach ($this->cookies->toHeaders() as $cookie )
 			$response = $response->withAddedHeader('Set-Cookie', $cookie);

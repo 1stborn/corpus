@@ -31,12 +31,12 @@ class DB {
 		static $injector;
 		if (!$injector)
 			$injector = function ($value) use ($params) {
-				switch ($value[0]) {
+				switch ($value[0][0]) {
 					case ':':
-						$key = substr($value, 1);
+						$key = substr($value[1], 1);
 					//no break
 					case '?':
-						$key = isset($key) ? $key : (int)substr($value, 1);
+						$key = isset($key) ? $key : (int)substr($value[1], 1);
 						if (array_key_exists($key, $params))
 							return $this->filter($params[$key]);
 				}
