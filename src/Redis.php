@@ -97,7 +97,7 @@ class Redis {
 	private function mget($values) {
 		$args = [];
 		if ( $values )
-			for ($i = 0, $l = sizeof($values) - 1; $i < $l; $i++)
+			for ($i = 0, $l = sizeof($values) - 1; $i < $l; $i += 2)
 				$args[$values[$i]] = unserialize($values[$i + 1]) ?? null;
 
 		return $args;

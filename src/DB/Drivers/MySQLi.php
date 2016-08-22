@@ -33,7 +33,7 @@ class MySQLi extends Driver {
 		if ( $this->connection()->real_query($sql) ) {
 			return $this->connection->store_result();
 		} else {
-			throw new \Exception($this->connection->error, $this->connection->errno);
+			throw new \Exception($this->connection->error . "\n$sql", $this->connection->errno);
 		}
 	}
 }

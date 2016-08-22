@@ -4,6 +4,7 @@ namespace Corpus\View;
 use Corpus\Config;
 use Corpus\View;
 
+use Interop\Container\ContainerInterface;
 use Twig_Environment;
 use Twig_Error_Loader;
 use Twig_Loader_Filesystem;
@@ -16,12 +17,19 @@ class Twig extends View {
 
 	private $template;
 
-	public function __construct($template = null) {
+	public function __construct(ContainerInterface $ci, $template = null) {
 		if ( !self::$twig ) {
 			$loader = new Twig_Loader_Filesystem;
 
 			foreach ( Config::get('view.templates') as $namespace => $path )
 				$loader->addPath($path, $namespace);
+
+			if ( $loaders = Config::get('twig.loaders', []) ) {
+				$loader = new \Twig_Loader_Chain([$loader]);
+				foreach($loaders as $class) {
+					$loader->addLoader(new $class($ci));
+				}
+			}
 
 			self::$twig = new Twig_Environment($loader, Config::get('twig'));
 

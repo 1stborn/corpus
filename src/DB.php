@@ -28,32 +28,27 @@ class DB {
 	}
 
 	public function query($sql, array $params = []) {
-		static $injector;
-		if (!$injector)
-			$injector = function ($value) use ($params) {
-				switch ($value[0][0]) {
-					case ':':
-						$key = substr($value[1], 1);
-					//no break
-					case '?':
-						$key = isset($key) ? $key : (int)substr($value[1], 1);
-						if (array_key_exists($key, $params))
-							return $this->filter($params[$key]);
-				}
+		return $this->execute(preg_replace_callback('~(?:\?[0-9]+|\:[a-z_][a-z0-9_]*)~i', function ($value) use ($params) {
+			list($code, $key) = [($value = current($value))[0], substr($value, 1)];
 
-				return $value;
-			};
+			switch ($code) {
+				case '?':
+					$key = (int)$key;
+				//no break;
+				case ':':
+					return $this->filter(array_key_exists($key, $params) ? $params[$key] : null);
+			}
 
-		return $this->execute(preg_replace_callback('~(\?[0-9]+|\:[a-z_][a-z0-9_]*)~i', $injector, $sql));
+			return $value;
+		}, $sql));
+	}
+
+	public function current($sql, array $params = []) {
+		return is_object($result = $this->query($sql, $params)) ? $result->fetch_row() : null;
 	}
 
 	public function scalar($sql, array $params = []) {
-		$result = $this->query($sql, $params);
-		if ( is_object($result) ) {
-			return reset($result->fetch_row());
-		}
-
-		return null;
+		return is_object($result = $this->query($sql, $params)) && ($row = $result->fetch_row()) ? reset($row) : null;
 	}
 
 	public function execute($sql) {
@@ -131,7 +126,7 @@ class DB {
 	}
 
 	/**
-	 * @return \DB\Driver
+	 * @return DB\Driver
 	 */
 	protected function provider() {
 		if (!$this->driver) {

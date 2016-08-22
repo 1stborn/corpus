@@ -6,13 +6,15 @@ use Interop\Container\ContainerInterface;
 use Slim\Container;
 use Slim\Handlers\AbstractHandler;
 use Slim\Handlers\NotFound;
-use Slim\Http\Cookies;
 use Slim\Http\Request;
 use Slim\Http\Response;
 
 /**
  * @property View view
- * @property \Corpus\Redis cache
+ * @property Cookies cookies
+ * @property Session session
+ * @property DB db
+ * @property Redis cache
  */
 class App extends AbstractHandler {
 	/**
@@ -21,13 +23,13 @@ class App extends AbstractHandler {
 	protected $ci;
 
 	public $http_status = 200;
-
 	protected $method, $params;
 
 	/**
 	 * @var Response
 	 */
 	private $response;
+
 	/**
 	 * @var Request
 	 */
@@ -35,24 +37,26 @@ class App extends AbstractHandler {
 
 	private $args;
 
-	private $session = null;
-
-	private $cookies;
-
 	protected $default = 'index';
 
 	public static function run($silent = false, $options = []) {
 		$options = Config::merge([
 			'settings' => Config::get('settings'),
-			'view' => function() {
+			'view' => function($ci) {
 				$renderer = Config::get('view.renderer');
-				return new $renderer;
+				return new $renderer($ci);
 			},
 			'db' => function() {
 				return new DB(Config::get('db.{default}'));
 			},
 			'cache' => function() {
 				return new Redis(Config::get("redis.{default}"));
+			},
+			'cookies' => function($ci) {
+				return new Cookies($ci);
+			},
+			'session' => function($ci) {
+				return new Session($ci);
 			}
 		], $options);
 
@@ -65,9 +69,10 @@ class App extends AbstractHandler {
 				$path = substr($path, 3) ?: '/';
 
 				if ( in_array($m[1], Config::get('language.available')) )
-					$request = $request
-						->withUri($request->getUri()->withPath($path))
-						->withAttribute('language', $m[1]);
+					$request =
+						$request
+							->withUri($request->getUri()->withPath($path))
+							->withAttribute('language', $m[1]);
 				else
 					return $response->withRedirect($path);
 			}
@@ -86,7 +91,6 @@ class App extends AbstractHandler {
 
 	public function __construct(ContainerInterface  $ci) {
 		$this->ci = $ci;
-		$this->cookies = new Cookies;
 	}
 
 	public function param($name, $default = null) {
@@ -132,55 +136,6 @@ class App extends AbstractHandler {
 				$this->args[$key] = $value;
 		else
 			$this->args[$name] = $value;
-
-		return $this;
-	}
-
-	public function flash($message = null) {
-		if ( !array_key_exists('__flash__', $this->session) )
-			$this->session['__flash__'] = [];
-
-		return $message
-			? array_push($this->session['__flash__'], $message)
-			: array_pop($this->session['__flash__']);
-	}
-
-	public function get($param, $default = null) {
-		if ( is_null($this->session) ) {
-			$this->session = $this->cache->hgetall($this->getSID()) ?: [];
-		}
-
-		return
-			array_key_exists($param, $this->session)
-				? ( $this->session[$param] ?: $default )
-				: $default;
-	}
-
-	private function getSID($scope = '') {
-		if ( !$sid = $this->getCookie('sid') )
-			$this->setCookie('sid', $sid = sha1(fread(fopen('/dev/urandom', 'r'), 100)), Config::get('session.lifetime'));
-
-		return '__session.' . ( $scope ? $scope . '.' : '') . $sid;
-	}
-
-	public function setCookie($name, $value, $expire = 0) {
-		$this->cookies->set($name, ['value' => $value, 'expires' => $expire]);
-	}
-
-	public function getCookie($name, $default = null) {
-		return $this->cookies->get(
-			$name,
-			$this->getRequest()->getCookieParam($name, $default));
-	}
-
-	public function set($param, $value = null) {
-		if ( is_array($param) )
-			foreach ( $param as $key => $value )
-				$this->set($key, $value);
-		else if (is_null($value) )
-			unset($this->session[$param]);
-		else
-			$this->session[$param] = $value;
 
 		return $this;
 	}
@@ -300,18 +255,9 @@ class App extends AbstractHandler {
 
 		$response = $this->before() ?: $this->after($this->route($this->method));
 
-		foreach ($this->cookies->toHeaders() as $cookie )
+		foreach ($this->ci->get('cookies')->toHeaders() as $cookie )
 			$response = $response->withAddedHeader('Set-Cookie', $cookie);
 
 		return $response;
-	}
-
-	public function __destruct() {
-		if ( $this->session ) {
-			$this->cache->del($this->getSID());
-			$this->cache->hmset($this->getSID(), $this->session);
-			if ( $lifetime = Config::get('session.lifetime', 0))
-				$this->cache->expire($this->getSID(), $lifetime);
-		}
 	}
 }
