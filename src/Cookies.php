@@ -16,7 +16,7 @@ class Cookies extends \Slim\Http\Cookies {
 	}
 
 	public function setCookie($name, $value, $lifetime = 0) {
-		$this->set($name, ['value' => $value, 'expires' => time() + $lifetime]);
+		$this->set($name, ['value' => $value, 'expires' => time() + $lifetime, 'path' => '/']);
 	}
 
 	public function getCookie($name, $default = null) {

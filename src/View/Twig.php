@@ -45,6 +45,10 @@ class Twig extends View {
 			$this->template = self::$twig->loadTemplate($template);
 	}
 
+	public function __call($name, $arguments) {
+		return call_user_func_array([self::$twig, $name], $arguments);
+	}
+
 	public function render($args = [], $template = null) {
 		$template = $this->getTemplate($template);
 		if ( $template instanceof Twig_Template )

@@ -46,6 +46,12 @@ class Session {
 		}
 	}
 
+	public function array() {
+		$this->init();
+
+		return $this->data;
+	}
+
 	public function get($param, $default = null) {
 		return $this->__get($param) ?: $default;
 	}
@@ -65,7 +71,7 @@ class Session {
 			$cache = $this->ci->get('cache');
 
 			if ($this->delete)
-				$cache->hdel($this->getSID(), array_keys($this->delete));
+				$cache->hmdel($this->getSID(), array_keys($this->delete));
 
 			if ($this->data) {
 				$cache->hmset($this->getSID(), $this->data);

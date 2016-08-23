@@ -84,6 +84,10 @@ class Redis {
 		return $written == $length ? $this->response() : null;
 	}
 
+	public function hmdel($name, array $fields) {
+		return $this->__call('hdel', array_merge([$name], array_values($fields)));
+	}
+
 	public function hmset($name, array $values) {
 		$args = [$name];
 		foreach ($values as $key => $value) {
