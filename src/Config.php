@@ -9,6 +9,10 @@ class Config {
 	public static function get($name, ...$args) {
 		static $cache = [];
 
+		$filters = explode('|', $name);
+
+		$name = array_shift($filters);
+
 		if ( !array_key_exists($name, $cache) ) {
 			$path = explode('.', self::resolve($name));
 
@@ -23,7 +27,16 @@ class Config {
 			$cache[$name] = $value;
 		}
 
-		return is_string($cache[$name]) && $args ? vsprintf($cache[$name], $args) : $cache[$name];
+		$value = is_string($cache[$name]) && $args ? vsprintf($cache[$name], $args) : $cache[$name];
+
+		foreach ((array)$filters as $filter) {
+			$filter = explode(':', $filter);
+			$func = $filter[0];
+			$filter[0] = $value;
+			$value = call_user_func_array($func, $filter);
+		}
+
+		return $value;
 	}
 
 	public static function load($target) {

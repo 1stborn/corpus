@@ -235,16 +235,11 @@ class App extends AbstractHandler {
 	}
 
 	protected function getView($method = null) {
-		$method = $method ?: $this->method;
+		$method = strtolower($method ?: $this->method);
+		$path = strtolower(substr(static::class, Config::get('router.namespace|strlen')));
 
-		return $this->view->find(strtolower($method)) ?:
-			   $this->view->find($this->path($method));
-	}
-
-	protected function path($method = null) {
-		$method = $method ?: $this->method;
-
-		return strtolower(str_replace(Config::get('router.namespace'), '', static::class . DS . $method));
+		return $this->view->find($path . DS . $method) ?:
+			$this->view->find($path);
 	}
 
 	final public function __invoke(Request $request, Response $response, array $args = []) {
