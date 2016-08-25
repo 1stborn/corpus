@@ -1,8 +1,7 @@
 <?php
 namespace Corpus;
 
-class RedisException extends \Exception {}
-class RedisConnectionException extends RedisException {}
+use Corpus\Redis\Exception;
 
 class Redis {
 	private $config = [];
@@ -22,7 +21,7 @@ class Redis {
 				$this->config['timeout']);
 
 			if ( !$connection )
-				throw new RedisConnectionException("Unable to connect {$this->config['hostname']}:{$this->config['port']}: ({$errno}) {$errstr}");
+				throw new Exception("Unable to connect {$this->config['hostname']}:{$this->config['port']}: ({$errno}) {$errstr}");
 
 			stream_set_timeout($connection, -1, null); // infinitive read timeout
 			stream_set_blocking($connection, 1);
@@ -54,7 +53,7 @@ class Redis {
 		do {
 			try {
 				return $this->exec($command);
-			} catch ( RedisConnectionException $e ) {
+			} catch (Exception $e) {
 				$this->socket(true);
 			}
 		} while ( true );
@@ -75,7 +74,7 @@ class Redis {
 					continue;
 				}
 				else
-					throw new RedisConnectionException('Failed to write entire command to stream');
+					throw new Exception('Failed to write entire command to stream');
 			}
 
 			$written += $bytes;
@@ -107,7 +106,7 @@ class Redis {
 		return $args;
 	}
 
-	public function hmget($name, array $fields) {
+	public function hmget(array $fields) {
 		return $this->mget($this->__call('hmget', $fields));
 	}
 
@@ -134,7 +133,7 @@ class Redis {
 
 	private function response() {
 		if ( ( $data = @fgets($this->socket(), 512) ) === false )
-			throw new RedisConnectionException("Connnection broken");
+			throw new Exception("Connnection broken");
 
 		$reply = trim($data);
 
@@ -153,7 +152,7 @@ class Redis {
 					do {
 						$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
 						if (($r = fread($this->socket(), $block_size)) === false)
-							throw new RedisException('Failed to read response from stream');
+							throw new Exception('Failed to read response from stream');
 						else {
 							$read += strlen($r);
 							$response .= $r;
@@ -173,9 +172,9 @@ class Redis {
 
 				return $response;
 			case '-': /* Error reply */
-				throw new RedisException(trim(substr($reply, 4)));
+				throw new Exception(trim(substr($reply, 4)));
 			default:
-				throw new RedisException("Unknown response: {$reply}");
+				throw new Exception("Unknown response: {$reply}");
 		}
 	}
 }
