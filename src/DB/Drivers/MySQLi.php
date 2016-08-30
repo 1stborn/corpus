@@ -31,7 +31,19 @@ class MySQLi extends Driver {
 
 	public function query($sql) {
 		if ( $this->connection()->real_query($sql) ) {
-			return $this->connection->store_result();
+			switch (strtolower(substr(trim($sql), 0, 4))) {
+				case 'inse':
+					return $this->connection->insert_id;
+				case 'dele':
+				case 'upda':
+					return $this->connection->affected_rows;
+				case 'sele':
+				case 'show':
+				case 'desc':
+					return $this->connection->store_result();
+				default:
+					return null;
+			}
 		} else {
 			throw new \Exception($this->connection->error . "\n$sql", $this->connection->errno);
 		}

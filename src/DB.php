@@ -44,11 +44,11 @@ class DB {
 	}
 
 	public function current($sql, array $params = []) {
-		return is_object($result = $this->query($sql, $params)) ? $result->fetch_row() : null;
+		return is_object($result = $this->query($sql, $params)) ? $result->fetch_row() : $result;
 	}
 
 	public function scalar($sql, array $params = []) {
-		return is_object($result = $this->query($sql, $params)) && ($row = $result->fetch_row()) ? reset($row) : null;
+		return ($row = $this->current($sql, $params)) ? reset($row) : $row;
 	}
 
 	public function execute($sql) {
