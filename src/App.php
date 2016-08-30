@@ -66,15 +66,14 @@ class App extends AbstractHandler {
 			$path = $request->getUri()->getPath();
 
 			if ( preg_match('~^/([a-z]{2})($|/)~i', $path, $m) ) {
-				$path = substr($path, 3) ?: '/';
+				if (in_array($m[1], Config::get('language.available'))) {
+					$path = substr($path, 3) ?: '/';
 
-				if ( in_array($m[1], Config::get('language.available')) )
 					$request =
 						$request
 							->withUri($request->getUri()->withPath($path))
 							->withAttribute('language', $m[1]);
-				else
-					return $response->withRedirect($path);
+				}
 			}
 
 			$controller = ucfirst(current(explode('/', trim($path, DS))) ?: Config::get('router.default'));

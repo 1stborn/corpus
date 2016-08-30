@@ -48,7 +48,7 @@ class DB {
 	}
 
 	public function scalar($sql, array $params = []) {
-		return ($row = $this->current($sql, $params)) ? reset($row) : $row;
+		return is_object($result = $this->query($sql, $params)) && ($row = $result->fetch_row()) ? reset($row) : $result;
 	}
 
 	public function execute($sql) {

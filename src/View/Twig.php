@@ -22,7 +22,7 @@ class Twig extends View {
 			$loader = new Twig_Loader_Filesystem;
 
 			foreach ( Config::get('view.templates') as $namespace => $path )
-				$loader->addPath($path, $namespace);
+				$loader->addPath(Config::get('view.root') . $path, $namespace);
 
 			if ( $loaders = Config::get('twig.loaders', []) ) {
 				$loader = new \Twig_Loader_Chain([$loader]);
