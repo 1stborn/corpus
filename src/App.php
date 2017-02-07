@@ -2,7 +2,6 @@
 namespace Corpus;
 
 use Interop\Container\ContainerInterface;
-
 use Slim\Container;
 use Slim\Handlers\AbstractHandler;
 use Slim\Handlers\NotFound;
@@ -10,11 +9,11 @@ use Slim\Http\Request;
 use Slim\Http\Response;
 
 /**
- * @property View view
+ * @property View    view
  * @property Cookies cookies
  * @property Session session
- * @property DB db
- * @property Redis cache
+ * @property DB      db
+ * @property Redis   cache
  */
 class App extends AbstractHandler {
 	/**
@@ -23,7 +22,11 @@ class App extends AbstractHandler {
 	protected $ci;
 
 	public $http_status = 200;
-	protected $method, $params;
+
+	protected
+		$method,
+		$params = [],
+		$view_root = "";
 
 	/**
 	 * @var Response
@@ -42,20 +45,21 @@ class App extends AbstractHandler {
 	public static function run($silent = false, $options = []) {
 		$options = Config::merge([
 			'settings' => Config::get('settings'),
-			'view' => function($ci) {
+			'view'     => function ($ci) {
 				$renderer = Config::get('view.renderer');
+
 				return new $renderer($ci);
 			},
-			'db' => function() {
+			'db'       => function () {
 				return new DB(Config::get('db.{default}'));
 			},
-			'cache' => function() {
+			'cache'    => function () {
 				return new Redis(Config::get("redis.{default}"));
 			},
-			'cookies' => function($ci) {
+			'cookies'  => function ($ci) {
 				return new Cookies($ci);
 			},
-			'session' => function($ci) {
+			'session'  => function ($ci) {
 				return new Session($ci);
 			}
 		], $options);
@@ -66,7 +70,7 @@ class App extends AbstractHandler {
 			$path = $request->getUri()->getPath();
 
 			if ( preg_match('~^/([a-z]{2})($|/)~i', $path, $m) ) {
-				if (in_array($m[1], Config::get('language.available'))) {
+				if ( in_array($m[1], Config::get('language.available')) ) {
 					$path = substr($path, 3) ?: '/';
 
 					$request =
@@ -88,7 +92,7 @@ class App extends AbstractHandler {
 		return $app->run($silent);
 	}
 
-	public function __construct(ContainerInterface  $ci) {
+	public function __construct(ContainerInterface $ci) {
 		$this->ci = $ci;
 	}
 
@@ -107,7 +111,7 @@ class App extends AbstractHandler {
 	}
 
 	public function before() {
-		$method = strtolower(trim($this->getRequest()->getUri()->getPath(), DS));
+		$method     = strtolower(trim($this->getRequest()->getUri()->getPath(), DS));
 		$controller = strtolower(substr(get_class($this), strlen(Config::get('router.namespace'))));
 
 		$this->method = trim(str_replace($controller, '', $method), '/') ?: strtolower(Config::get('router.default'));
@@ -125,7 +129,7 @@ class App extends AbstractHandler {
 			Config::merge(
 				$args,
 				$this->args,
-				[ 'request' => (array)$this->params + $this->getRequest()->getParams() ]
+				['request' => (array)$this->params + $this->getRequest()->getParams()]
 			), $template ?: $this->getView());
 	}
 
@@ -170,6 +174,7 @@ class App extends AbstractHandler {
 		foreach ( $required as $key )
 			if ( !$this->param($key) )
 				return false;
+
 		return true;
 	}
 
@@ -185,8 +190,19 @@ class App extends AbstractHandler {
 	 * @return Response
 	 */
 	public function asJson($content) {
-		return $this->getResponse()->withJson($content,
-			$this->http_status, JSON_UNESCAPED_UNICODE | JSON_NUMERIC_CHECK | JSON_UNESCAPED_SLASHES);
+		return $this->getResponse()->withJson(
+			$content,
+			$this->http_status,
+			JSON_UNESCAPED_UNICODE | JSON_NUMERIC_CHECK | JSON_UNESCAPED_SLASHES
+		);
+	}
+
+	public function asPlain($content) {
+		if ( $content instanceof View ) {
+			$content = $this->render([], $content);
+		}
+
+		return $this->getResponse()->withStatus($this->http_status)->write($content);
 	}
 
 	/**
@@ -197,9 +213,9 @@ class App extends AbstractHandler {
 		if ( $response instanceof Response )
 			return $response;
 		else if ( is_scalar($response) )
-			return $this->getResponse()->withStatus($this->http_status)->write($response);
+			return $this->asPlain($response);
 		else if ( $view = $this->getView() )
-			return $this->render((array)$response, $view);
+			return $this->asPlain($this->render((array)$response, $view));
 		else if ( $response )
 			return $this->asJson($response);
 		else
@@ -213,9 +229,9 @@ class App extends AbstractHandler {
 			$http_method = strtolower($this->getRequest()->getMethod());
 
 			return call_user_func([
-				$this, (
-					method_exists($this, $http_method . $this->default) ? $http_method : 'action'
-				) . $this->default]);
+				$this,
+				( method_exists($this, $http_method . $this->default) ? $http_method : 'action' ) . $this->default
+			]);
 		}
 	}
 
@@ -228,7 +244,7 @@ class App extends AbstractHandler {
 			return [$this, $http_method . $method];
 
 		if ( method_exists($this, 'action' . $method) )
-			return [$this, 'action' . $method ];
+			return [$this, 'action' . $method];
 
 		return null;
 	}
@@ -237,20 +253,21 @@ class App extends AbstractHandler {
 		$method = strtolower($method ?: $this->method);
 		$path = strtolower(substr(static::class, Config::get('router.namespace|strlen')));
 
-		return $this->view->find($path . DS . $method) ?:
-			$this->view->find($path);
+		return
+			$this->view->find($this->view_root . DS . $path) ?:
+				$this->view->find($this->view_root . DS . $path . ( $method ?: $this->method ));
 	}
 
 	final public function __invoke(Request $request, Response $response, array $args = []) {
-		$this->request = $request;
+		$this->request  = $request;
 		$this->response = $response;
-
-		$this->params = $args;
+		$this->params   = $args;
 
 		$response = $this->before() ?: $this->after($this->route($this->method));
 
-		foreach ($this->ci->get('cookies')->toHeaders() as $cookie )
+		foreach ( $this->ci->get('cookies')->toHeaders() as $cookie ) {
 			$response = $response->withAddedHeader('Set-Cookie', $cookie);
+		}
 
 		return $response;
 	}

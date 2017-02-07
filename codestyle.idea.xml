@@ -1,4 +1,4 @@
-<code_scheme name="Project">
+<code_scheme name="Corpus">
   <option name="OTHER_INDENT_OPTIONS">
     <value>
       <option name="INDENT_SIZE" value="4" />
@@ -13,7 +13,18 @@
   </option>
   <option name="LINE_SEPARATOR" value="&#xA;" />
   <PHPCodeStyleSettings>
+    <option name="ALIGN_KEY_VALUE_PAIRS" value="true"/>
+    <option name="ALIGN_PHPDOC_PARAM_NAMES" value="true"/>
+    <option name="ALIGN_ASSIGNMENTS" value="true"/>
+    <option name="PHPDOC_BLANK_LINE_BEFORE_TAGS" value="true"/>
+    <option name="PHPDOC_WRAP_LONG_LINES" value="true"/>
+    <option name="LOWER_CASE_BOOLEAN_CONST" value="true"/>
+    <option name="LOWER_CASE_NULL_CONST" value="true"/>
+    <option name="VARIABLE_NAMING_STYLE" value="CAMEL_CASE"/>
+    <option name="BLANK_LINE_BEFORE_RETURN_STATEMENT" value="true"/>
+    <option name="ALIGN_CLASS_CONSTANTS" value="true"/>
     <option name="SPACES_WITHIN_SHORT_ECHO_TAGS" value="false" />
+    <option name="FORCE_SHORT_DECLARATION_ARRAY_STYLE" value="true"/>
   </PHPCodeStyleSettings>
   <XML>
     <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
@@ -35,8 +46,27 @@
   <codeStyleSettings language="PHP">
     <option name="CLASS_BRACE_STYLE" value="1" />
     <option name="METHOD_BRACE_STYLE" value="1" />
+    <option name="ELSE_ON_NEW_LINE" value="true"/>
+    <option name="INDENT_BREAK_FROM_CASE" value="false"/>
+    <option name="ALIGN_MULTILINE_CHAINED_METHODS" value="true"/>
+    <option name="ALIGN_MULTILINE_PARAMETERS" value="false"/>
+    <option name="ALIGN_MULTILINE_FOR" value="false"/>
+    <option name="ALIGN_MULTILINE_BINARY_OPERATION" value="true"/>
+    <option name="ALIGN_MULTILINE_TERNARY_OPERATION" value="true"/>
+    <option name="ALIGN_MULTILINE_ARRAY_INITIALIZER_EXPRESSION" value="true"/>
+    <option name="ALIGN_GROUP_FIELD_DECLARATIONS" value="true"/>
+    <option name="SPACE_WITHIN_PARENTHESES" value="true"/>
+    <option name="SPACE_WITHIN_IF_PARENTHESES" value="true"/>
+    <option name="SPACE_WITHIN_FOR_PARENTHESES" value="true"/>
+    <option name="METHOD_CALL_CHAIN_WRAP" value="1"/>
+    <option name="BINARY_OPERATION_WRAP" value="5"/>
+    <option name="TERNARY_OPERATION_WRAP" value="5"/>
+    <option name="FOR_STATEMENT_WRAP" value="5"/>
+    <option name="ARRAY_INITIALIZER_WRAP" value="5"/>
+    <option name="ARRAY_INITIALIZER_LBRACE_ON_NEXT_LINE" value="true"/>
+    <option name="ARRAY_INITIALIZER_RBRACE_ON_NEXT_LINE" value="true"/>
+    <option name="ASSIGNMENT_WRAP" value="5"/>
     <indentOptions>
-      <option name="CONTINUATION_INDENT_SIZE" value="2" />
       <option name="USE_TAB_CHARACTER" value="true" />
       <option name="SMART_TABS" value="true" />
     </indentOptions>
