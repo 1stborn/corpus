@@ -17,10 +17,5 @@
 		"php": ">=5.6",
 		"slim/slim": "^3.7",
 		"twig/twig": "^2.1"
-	},
-	"extra": {
-		"branch-alias": {
-			"dev-master": "master"
-		}
 	}
 }
