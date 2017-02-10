@@ -81,8 +81,15 @@ class App extends AbstractHandler {
 			}
 
 			$controller = ucfirst(current(explode('/', trim($path, DS))) ?: Config::get('router.default'));
-			if ( !class_exists(Config::get('router.namespace') . $controller) )
-				$controller = Config::get('router.default');
+			$namespace = Config::get('router.namespace');
+			$default = Config::get('router.default');
+
+			if ( !class_exists($namespace . $controller) ) {
+				$controller .= '\\' . $default;
+				if ( !class_exists($namespace . $controller) ) {
+					$controller = $default;
+				}
+			}
 
 			$app->map(Config::get('router.methods'), $path, Config::get('router.namespace') . $controller);
 
