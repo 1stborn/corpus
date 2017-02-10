@@ -85,7 +85,6 @@ class App extends AbstractHandler {
 			$namespace = Config::get('router.namespace');
 			$default    = Config::get('router.default');
 
-
 			if ( !class_exists($namespace . $controller) ) {
 				$controller .= '\\' . $default;
 				if ( !class_exists($namespace . $controller) ) {
