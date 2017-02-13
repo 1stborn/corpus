@@ -261,9 +261,8 @@ class App extends AbstractHandler {
 		$method = strtolower($method ?: $this->method);
 		$path = strtolower(substr(static::class, Config::get('router.namespace|strlen')));
 
-		return
-			$this->view->find($this->view_root . DS . $path) ?:
-				$this->view->find($this->view_root . DS . $path . ( $method ?: $this->method ));
+		return $this->view->find(implode(DS, [$this->view_root, $path, $method ?: $this->method])) ?:
+			$this->view->find($this->view_root . DS . $path);
 	}
 
 	final public function __invoke(Request $request, Response $response, array $args = []) {
