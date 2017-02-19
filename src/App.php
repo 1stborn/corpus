@@ -263,8 +263,7 @@ class App extends AbstractHandler {
 
 		return
 			$this->view->find($this->view_root . DS . $path . DS . $method) ?:
-				$this->view->find($this->view_root . DS . $method) ?:
-					$this->view->find($method);
+				$this->view->find($this->view_root . DS . $method);
 	}
 
 	final public function __invoke(Request $request, Response $response, array $args = []) {
