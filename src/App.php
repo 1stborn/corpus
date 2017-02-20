@@ -80,19 +80,20 @@ class App extends AbstractHandler {
 				}
 			}
 
-			$controller = implode('\\', explode('/', trim($path, DS))) ?: Config::get('router.default');
-
 			$namespace = Config::get('router.namespace');
-			$default    = Config::get('router.default');
+			$search = explode('/', trim($path, DS));
 
-			if ( !class_exists($namespace . $controller) ) {
-				$controller .= '\\' . $default;
-				if ( !class_exists($namespace . $controller) ) {
-					$controller = $default;
-				}
+			do {
+				if ( class_exists($controller = $namespace . implode('/', $search)) )
+					break;
+				array_pop($search);
+			} while ($search);
+
+			if ( !$search ) {
+				$controller = $namespace . Config::get('router.default');
 			}
 
-			$app->map(Config::get('router.methods'), $path, Config::get('router.namespace') . $controller);
+			$app->map(Config::get('router.methods'), $path, $controller);
 
 			return $app($request, $response);
 		});
