@@ -84,7 +84,7 @@ class App extends AbstractHandler {
 			$search = explode('/', trim($path, DS));
 
 			do {
-				if ( class_exists($controller = $namespace . implode('/', $search)) )
+				if ( class_exists($controller = $namespace . implode('\\', $search)) )
 					break;
 				array_pop($search);
 			} while ($search);
