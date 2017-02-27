@@ -228,10 +228,10 @@ class App extends AbstractHandler {
 			return $response;
 		else if ( is_scalar($response) )
 			return $this->asPlain($response);
-		else if ( $view = $this->getView() )
-			return $this->asPlain($this->render((array)$response, $view));
 		else if ( $response )
 			return $this->asJson($response);
+		else if ( $view = $this->getView() )
+			return $this->asPlain($this->render((array)$response, $view));
 		else
 			return $this->getResponse()->withStatus(204);
 	}
