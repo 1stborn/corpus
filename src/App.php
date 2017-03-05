@@ -121,14 +121,16 @@ class App extends AbstractHandler {
 
 	public function before() {
 		$method     = strtolower(trim($this->getRequest()->getUri()->getPath(), DS));
-		$controller = strtolower(substr(get_class($this), strlen(Config::get('router.namespace'))));
+		$controller =
+			str_replace('\\', DS,
+				strtolower(
+					substr(get_class($this), strlen(Config::get('router.namespace')))));
 
 		if ( strpos($method, $controller) === 0 ) {
 			$method = substr($method, strlen($controller));
 		}
 
 		$this->method = trim($method) ?: strtolower(Config::get('router.default'));
-		$controller   = str_replace('\\', DS, $controller);
 
 		$this->assign('controller',
 			$controller == $this->method
