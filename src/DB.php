@@ -29,7 +29,7 @@ class DB {
 
 	public function query($sql, array $params = []) {
 		return $this->execute(preg_replace_callback('~(?:\?[0-9]+|\:[a-z_][a-z0-9_]*)~i', function ($value) use ($params) {
-			list($code, $key) = [($value = current($value))[0], substr($value, 1)];
+			list($code, $key) = [( $value = current($value) )[0], substr($value, 1)];
 
 			switch ($code) {
 				case '?':
@@ -48,7 +48,15 @@ class DB {
 	}
 
 	public function scalar($sql, array $params = []) {
-		return is_object($result = $this->query($sql, $params)) && ($row = $result->fetch_row()) ? reset($row) : $result;
+		$result = $this->query($sql, $params);
+
+		if ( is_object($result) ) {
+			$row = $result->fetch_row();
+
+			return $row ? reset($row) : null;
+		}
+
+		return $result;
 	}
 
 	public function execute($sql) {
@@ -59,17 +67,17 @@ class DB {
 
 	public function update($table, array $params = [], $where = [], $limit = null) {
 		$sql = 'UPDATE ' . $table;
-		if ($params) {
+		if ( $params ) {
 			$sql .= ' ';
-			foreach ($params as $key => $value)
-				if (!is_numeric($key) && is_scalar($value))
+			foreach ( $params as $key => $value )
+				if ( !is_numeric($key) && is_scalar($value) )
 					$sql .= $key . '=' . $this->filter($value) . ',';
 
 			$sql[strlen($sql) - 1] = ' ';
 
 			$sql .= 'WHERE 1' . $this->combine($where);
 
-			if ($limit) {
+			if ( $limit ) {
 				$sql .= ' LIMIT ' . (int)$limit;
 			}
 		}
@@ -78,10 +86,10 @@ class DB {
 	}
 
 	public function delete($table, $where = [], $limit = null) {
-		if ($where) {
+		if ( $where ) {
 			$sql = 'DELETE FROM ' . $table . ' WHERE 1' . $this->combine($where);
 
-			if ($limit) {
+			if ( $limit ) {
 				$sql .= ' LIMIT ' . (int)$limit;
 			}
 
@@ -94,31 +102,32 @@ class DB {
 	public function insert($table, array $data = [], array $update = []) {
 		$sql = 'INSERT INTO ' . $table;
 
-		if (is_integer(key($data))) {
+		if ( is_integer(key($data)) ) {
 			$sql .= '(`' . implode('`,`', array_keys(reset($value))) . '`) VALUES ';
 			$callback = [$this, 'escape'];
 
-			foreach ($data as $value) {
+			foreach ( $data as $value ) {
 				$sql .= '(' . implode(',', array_map($callback, $value)) . '),';
 			}
-		} else {
-			foreach ($data as $key => $value) {
+		}
+		else {
+			foreach ( $data as $key => $value ) {
 				$sql .= $key . '=' . $this->filter($value) . ',';
 			}
 		}
 
 		$sql[strlen($sql) - 1] = '';
 
-		if ($update) {
+		if ( $update ) {
 
 			$sql .= ' ON DUPLICATE KEY UPDATE ';
-			foreach ($update as $field) {
-				$sql .= '`'.$field.'` = VALUES(`'.$field.'`),';
+			foreach ( $update as $field ) {
+				$sql .= '`' . $field . '` = VALUES(`' . $field . '`),';
 			}
 			$sql[strlen($sql) - 1] = '';
 		}
 
-		return (int) $this->execute($sql);
+		return (int)$this->execute($sql);
 	}
 
 	protected function escape($value) {
@@ -129,7 +138,7 @@ class DB {
 	 * @return DB\Driver
 	 */
 	protected function provider() {
-		if (!$this->driver) {
+		if ( !$this->driver ) {
 			$this->driver = new $this->config['driver']($this->config);
 		}
 
@@ -137,35 +146,43 @@ class DB {
 	}
 
 	private function filter($value) {
-		if (is_object($value) || is_array($value)) {
-			$values = array();
-			foreach ($value as $element) {
+		if ( is_object($value) || is_array($value) ) {
+			$values = [];
+			foreach ( $value as $element ) {
 				$values[] = $this->filter($element);
 			}
+
 			return implode(",", $values);
-		} else if (!is_bool($value) && preg_match('~^\-?(?(?=[1-9])[0-9]*?\.?|0(?(?=[0-9])\.|\.?))[0-9]*$~', $value)) {
-			if (strpos($value, ".") !== false) {
+		}
+		else if ( !is_bool($value) && preg_match('~^\-?(?(?=[1-9])[0-9]*?\.?|0(?(?=[0-9])\.|\.?))[0-9]*$~', $value) ) {
+			if ( strpos($value, ".") !== false ) {
 				return round($value, 5);
-			} else {
+			}
+			else {
 				return (int)$value;
 			}
-		} else if (is_string($value)) {
+		}
+		else if ( is_string($value) ) {
 			return "'" . str_replace(['\\\\%', '\\\\_'], ['\%', '\_'], $this->escape($value)) . "'";
-		} else if (is_bool($value)) {
+		}
+		else if ( is_bool($value) ) {
 			return $value ? 'TRUE' : 'FALSE';
-		} else if (is_null($value)) {
+		}
+		else if ( is_null($value) ) {
 			return 'NULL';
-		} else {
+		}
+		else {
 			return '';
 		}
 	}
 
 	private function combine($params, $scalar = 'AND', $mixed = 'OR') {
 		$result = '';
-		foreach ($params as $key => $value) {
-			if (is_scalar($value)) {
+		foreach ( $params as $key => $value ) {
+			if ( is_scalar($value) ) {
 				$result .= ' ' . $scalar . ' ' . $key . '=' . $this->filter($value);
-			} else {
+			}
+			else {
 				$result .= ' ' . $mixed . ' (' . $this->combine($value) . ')';
 			}
 		}
