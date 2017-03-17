@@ -163,7 +163,8 @@ class DB {
 			}
 		}
 		else if ( is_string($value) ) {
-			return "'" . str_replace(['\\\\%', '\\\\_'], ['\%', '\_'], $this->escape($value)) . "'";
+			return $value[0] == '!' ? $value :
+				"'" . str_replace(['\\\\%', '\\\\_'], ['\%', '\_'], $this->escape($value)) . "'";
 		}
 		else if ( is_bool($value) ) {
 			return $value ? 'TRUE' : 'FALSE';
