@@ -111,6 +111,10 @@ class App extends AbstractHandler {
 			: $this->getRequest()->getParam($name, $default);
 	}
 
+	public function params() {
+		return array_merge($this->params, $this->getRequest()->getParams());
+	}
+
 	public function url() {
 		return strtolower(str_replace('\\', '/', str_replace(__NAMESPACE__, '', static::class)) . DS . $this->method);
 	}
@@ -135,7 +139,7 @@ class App extends AbstractHandler {
 		$this->assign('controller',
 			$controller == $this->method
 				? $this->method
-				: $controller . $this->method
+				: $controller . DS . $this->method
 		);
 	}
 
