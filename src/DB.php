@@ -68,7 +68,7 @@ class DB {
 	public function update($table, array $params = [], $where = [], $limit = null) {
 		$sql = 'UPDATE ' . $table;
 		if ( $params ) {
-			$sql .= ' ';
+			$sql .= ' SET ';
 			foreach ( $params as $key => $value )
 				if ( !is_numeric($key) && is_scalar($value) )
 					$sql .= $key . '=' . $this->filter($value) . ',';
@@ -178,6 +178,22 @@ class DB {
 		}
 		else {
 			return '';
+		}
+	}
+
+	public function atomic($tables, callable $callback) {
+		$tables = (array)$tables;
+
+		try {
+			$list = [];
+			foreach ( $tables as $alias => $name )
+				$list[] = $name . ( is_numeric($alias) ? '' : " {$alias}" ) . " WRITE";
+
+			$list && $this->execute("LOCK TABLES " . implode(',', $list));
+
+			return $callback();
+		} finally {
+			$this->execute("UNLOCK TABLES");
 		}
 	}
 
