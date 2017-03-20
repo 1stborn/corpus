@@ -106,6 +106,8 @@ class App extends AbstractHandler {
 	}
 
 	public function param($name, $default = null) {
+		$name = is_array($name) ? reset($name) : $name;
+
 		return array_key_exists($name, $this->params)
 			? $this->params[$name]
 			: $this->getRequest()->getParam($name, $default);
@@ -216,6 +218,14 @@ class App extends AbstractHandler {
 	 * @return Response
 	 */
 	public function asJson($content) {
+		if ( $content instanceof \Traversable ) {
+			$data = [];
+			foreach ( $content as $id => $value )
+				$data[$id] = $value;
+
+			$content = $data;
+		}
+
 		return $this->getResponse()->withJson(
 			$content,
 			$this->http_status,

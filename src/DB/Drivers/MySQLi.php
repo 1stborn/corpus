@@ -25,6 +25,10 @@ class MySQLi extends Driver {
 		return $this->connection;
 	}
 
+	public function __get($name) {
+		return $this->connection()->{$name};
+	}
+
 	public function escape($value) {
 		return $this->connection()->real_escape_string($value);
 	}
