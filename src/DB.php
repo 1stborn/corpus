@@ -203,7 +203,10 @@ class DB {
 			if ( is_scalar($value) ) {
 				$result .= ' ' . $scalar . ' ' . $key . '=' . $this->filter($value);
 			}
-			else {
+			else if ( is_null($value) ) {
+				$result .= ' ' . $scalar . ' ' . $key . ' IS NULL';
+			}
+			else if ( is_array($value) || $value instanceof \Traversable ) {
 				$result .= ' ' . $mixed . ' (' . $this->combine($value) . ')';
 			}
 		}
