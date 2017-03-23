@@ -135,6 +135,16 @@ class App extends AbstractHandler {
 		if ( strpos($method, $controller) === 0 )
 			$method = substr($method, strlen($controller) + 1);
 
+		$parts = explode(DS, $method);
+
+		for ( $i = 0, $l = sizeof($parts); $i != $l; $i++ )
+			if ( !preg_match('~^[a-z]~iu', $parts[$i]) )
+				break;
+
+		$method = implode(DS, array_slice($parts, 0, $i));
+		if ( isset($parts[$i]) )
+			$this->params = array_merge($this->params, array_slice($parts, $i));
+
 		$this->method = trim(trim($method), DS) ?: strtolower(Config::get('router.default'));
 
 		$this->assign('controller',
