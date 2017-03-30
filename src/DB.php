@@ -166,7 +166,7 @@ class DB {
 			if ( !$value )
 				return "''";
 			else if ( $value[0] == '!' )
-				return $value;
+				return substr($value, 1);
 			else
 				return "'" . str_replace(['\\\\%', '\\\\_'], ['\%', '\_'], $this->escape($value)) . "'";
 		}
