@@ -126,17 +126,26 @@ class App extends AbstractHandler {
 	}
 
 	public function before() {
-		$method     = strtolower(trim($this->getRequest()->getUri()->getPath(), DS));
+		$method = substr(strtolower($this->getRequest()->getUri()->getPath()), 1);
 		$controller =
 			str_replace('\\', DS,
 				strtolower(
 					substr(get_class($this), strlen(Config::get('router.namespace')))));
 
-		if ( strpos($method, $controller) === 0 ) {
-			$method = substr($method, strlen($controller));
-		}
+		if ( strpos($method, $controller) === 0 )
+			$method = substr($method, strlen($controller) + 1);
 
-		$this->method = trim($method) ?: strtolower(Config::get('router.default'));
+		$parts = explode(DS, $method);
+
+		for ( $i = 0, $l = sizeof($parts); $i != $l; $i++ )
+			if ( !preg_match('~^[a-z]~iu', $parts[$i]) )
+				break;
+
+		$method = implode(DS, array_slice($parts, 0, $i));
+		if ( isset($parts[$i]) )
+			$this->params = array_merge($this->params, array_slice($parts, $i));
+
+		$this->method = trim(trim($method), DS) ?: strtolower(Config::get('router.default'));
 
 		$this->assign('controller',
 			$controller == $this->method
@@ -252,6 +261,8 @@ class App extends AbstractHandler {
 			return $this->asPlain($response);
 		else if ( $response )
 			return $this->asJson($response);
+		else if ( $this->request->isXhr() && $this->request->getMethod() == 'POST' )
+			return $this->getResponse()->withStatus(202);
 		else if ( $view = $this->getView() )
 			return $this->asPlain($this->render((array)$response, $view));
 		else
