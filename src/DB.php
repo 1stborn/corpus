@@ -100,34 +100,25 @@ class DB {
 	}
 
 	public function insert($table, array $data = [], array $update = []) {
-		$sql = 'INSERT INTO ' . $table;
+		$sql = 'INSERT INTO ' . $table . ' SET ';
 
 		if ( is_integer(key($data)) ) {
 			$sql .= '(`' . implode('`,`', array_keys(reset($value))) . '`) VALUES ';
 			$callback = [$this, 'escape'];
 
-			foreach ( $data as $value ) {
+			foreach ( $data as $value )
 				$sql .= '(' . implode(',', array_map($callback, $value)) . '),';
-			}
 		}
-		else {
-			foreach ( $data as $key => $value ) {
-				$sql .= $key . '=' . $this->filter($value) . ',';
-			}
-		}
-
-		$sql[strlen($sql) - 1] = '';
+		else foreach ( $data as $key => $value )
+			$sql .= $key . '=' . $this->filter($value) . ',';
 
 		if ( $update ) {
-
-			$sql .= ' ON DUPLICATE KEY UPDATE ';
-			foreach ( $update as $field ) {
+			$sql = substr($sql, 0, -1) . ' ON DUPLICATE KEY UPDATE ';
+			foreach ( array_keys($update) as $field )
 				$sql .= '`' . $field . '` = VALUES(`' . $field . '`),';
-			}
-			$sql[strlen($sql) - 1] = '';
 		}
 
-		return (int)$this->execute($sql);
+		return (int)$this->execute(substr($sql, 0, -1));
 	}
 
 	protected function escape($value) {
