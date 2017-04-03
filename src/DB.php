@@ -112,11 +112,11 @@ class DB {
 		else foreach ( $data as $key => $value )
 			$sql .= $key . '=' . $this->filter($value) . ',';
 
-		if ( $update ) {
-			$sql = substr($sql, 0, -1) . ' ON DUPLICATE KEY UPDATE ';
-			foreach ( array_keys($update) as $field )
-				$sql .= '`' . $field . '` = VALUES(`' . $field . '`),';
-		}
+        if ( $update ) {
+            $sql = substr($sql, 0, -1) . ' ON DUPLICATE KEY UPDATE ';
+            foreach ( $update as $name => $field )
+                $sql .= '`' . ($used = is_numeric($name) ? $field : $name) . '` = VALUES(`' . $used . '`),';
+        }
 
 		return (int)$this->execute(substr($sql, 0, -1));
 	}
