@@ -104,10 +104,9 @@ class DB {
 
 		if ( is_integer(key($data)) ) {
 			$sql .= '(`' . implode('`,`', array_keys(reset($value))) . '`) VALUES ';
-			$callback = [$this, 'escape'];
 
 			foreach ( $data as $value )
-				$sql .= '(' . implode(',', array_map($callback, $value)) . '),';
+				$sql .= '(' . implode(',', array_map([$this, 'filter'], $value)) . '),';
 		}
 		else foreach ( $data as $key => $value )
 			$sql .= $key . '=' . $this->filter($value) . ',';
