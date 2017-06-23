@@ -1,4 +1,5 @@
 <?php
+
 namespace Corpus;
 
 use Interop\Container\ContainerInterface;
@@ -270,35 +271,43 @@ class App extends AbstractHandler {
 	}
 
 	public function route($method) {
-		if ( $route = $this->findRoute($method) )
-			return call_user_func_array($route, $this->params);
-		else {
-			$http_method = strtolower($this->getRequest()->getMethod());
+		if ( $route = $this->findRoute($method, $this->default) ) {
+			if ( method_exists($this, 'middleware') ) {
+				$result = $this->middleware();
 
-			return call_user_func([
-				$this,
-				( method_exists($this, $http_method . $this->default) ? $http_method : 'action' ) . $this->default
-			]);
+				if ( $result instanceof Response ) {
+					return $result;
+				}
+				else if ( $result === false ) {
+					return $this->getResponse()->withStatus(403);
+				}
+			}
+
+			return call_user_func_array($route, $this->params);
 		}
+
+		return null;
 	}
 
 	protected function findRoute($method) {
 		$http_method = strtolower($this->getRequest()->getMethod());
 
-		$method = preg_replace('~[^a-z_0-9]~iu', '', $method);
+		foreach ( func_get_args() as $current ) {
+			$current = preg_replace('~[^a-z_0-9]~iu', '', $current);
 
-		if ( method_exists($this, $http_method . $method) )
-			return [$this, $http_method . $method];
+			if ( method_exists($this, $http_method . $current) )
+				return [$this, $http_method . $current];
 
-		if ( method_exists($this, 'action' . $method) )
-			return [$this, 'action' . $method];
+			if ( method_exists($this, 'action' . $current) )
+				return [$this, 'action' . $current];
+		}
 
 		return null;
 	}
 
 	protected function getView($method = null) {
 		$method = strtolower($method ?: $this->method);
-		$path = strtolower(substr(static::class, Config::get('router.namespace|strlen')));
+		$path   = strtolower(substr(static::class, Config::get('router.namespace|strlen')));
 
 		return
 			$this->view->find($this->view_root . DS . $path . DS . $method) ?:
@@ -310,7 +319,9 @@ class App extends AbstractHandler {
 		$this->response = $response;
 		$this->params   = $args;
 
-		$response = $this->before() ?: $this->after($this->route($this->method));
+		$this->before();
+
+		$response = $this->after($this->route($this->method));
 
 		foreach ( $this->ci->get('cookies')->toHeaders() as $cookie ) {
 			$response = $response->withAddedHeader('Set-Cookie', $cookie);
